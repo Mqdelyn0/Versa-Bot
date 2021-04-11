@@ -4,9 +4,12 @@ const config = require('../config.json');
 const logging = require('./structure/logging.js');
 const mongoose = require('./structure/mongoose.js');
 const linking_model = require('./database_models/linking.js');
+const punishents_model = require('./database_models/punishment.js');
+const tickets_model = require('./database_models/ticket.js');
+const donations_model = require('./database_models/donation.js');
 const path = require('path');
 const fs = require('fs');
-
+const delay = ms => new Promise(res => setTimeout(res, ms));
 client.login(config.BOT_SETTINGS.BOT_TOKEN);
 
 function clean(text) {
@@ -35,17 +38,18 @@ client.on("message", message => {
     }
 });
 
-client.on('ready', () => {
+client.on('ready', async() => {
     logging.init(client);
     logging.start(client, `${client.user.tag} has started up! Initializing handlers.`);
     register_commands();
     register_events();
     mongoose.init(client);
     let guild = client.guilds.cache.get(config.BOT_SETTINGS.GUILD_ID);
-    refresh_linking(client, guild);
-    setInterval(() => {
-        refresh_linking(client, guild);
-    }, 1000 * 300);
+    initLinking(client, guild);
+    initTicketing(client, guild);
+    initPunishments(client, guild);
+    initDonations(client, guild);
+    initStatus(client, guild);
 });
 
 async function register_commands(directory = 'commands') {
@@ -66,12 +70,170 @@ async function register_commands(directory = 'commands') {
     }
 };
 
-function fuckEquip() {
+async function initLinking(client, guild) {
     setInterval(() => {
-        var channel = client.channels.cache.get("798694893073334302");
-        channel.send("<@457852570065567744>");
-    }, 1250);
+        guild.members.cache.forEach(async(member) => {
+            let linking_roles = config.ROLES.LINKING;
+            let model = await linking_model.findOne({ discord_id: member.id });
+            if(model) {
+                member.setNickname(`${model.player_name} | ${model.player_rank}`);
+                if(model.is_verified === false) return;
+                linking_roles.forEach(role_id => {
+                    let role = guild.roles.cache.get(role_id);
+                    if(member.roles.cache.has(role.id)) {
+                        if(model.player_rank !== role.name) {
+                            logging.info(client, `Removed ${role.name} from ${member.user.tag}!`);
+                            member.roles.remove(role);
+                        }
+                    }
+                });
+                let role_needed;
+                let role_linked = guild.roles.cache.find(check_role => check_role.id ===config.ROLES.LINKED);
+                if(!member.roles.cache.has(role_linked.id)) {
+                    member.roles.add(role_linked);
+                    logging.info(client, `Added ${role_linked.name} to ${member.user.tag} as they linked their account!`);
+                }
+                role_needed = guild.roles.cache.find(check_role => check_role.name === model.player_rank);
+                if(role_needed) {
+                    if(!member.roles.cache.has(role_needed.id)) {
+                        member.roles.add(role_needed);
+                        logging.info(client, `Added ${role_needed.name} to ${member.user.tag} as they linked their account!`);
+                    }
+                }
+            } else if(!model) {
+                let role = guild.roles.cache.get(config.ROLES.LINKED);
+                if(member.roles.cache.has(role.id)) {
+                    member.roles.remove(role);
+                    logging.info(client, `Removed ${role.name} from ${member.user.tag} as they unlinked their account!`);
+                }
+    
+                linking_roles.forEach(role_id => {
+                    let role = guild.roles.cache.get(role_id);
+                    if(member.roles.cache.has(role)) {
+                        logging.info(client, `Removed ${role.name} from ${member.user.tag} as they unlinked their account!`);
+                        member.roles.remove(role);
+                    }
+                }); 
+            }
+        });
+    }, 1000 * 300);
+};
+
+async function initStatus(client, guild) {
+    let status_list = [
+        "PLAYING|play.mineversa.net",
+        "PLAYING|play.genversa.net",
+        "WATCHING|over <users> users",
+        "WATCHING|over tickets (-help)",
+    ];
+    for(let status of status_list) {
+        let data = status.split('|');
+        client.user.setPresence({ 
+            activity: {
+                name: `${data[1].replace(`<users>`, `${client.users.cache.size}`)}`,
+                type: `${data[0]}`
+            },
+            status: "online"
+        });
+        await delay(5000);
+    }
+    initStatus(client, guild);
 }
+
+async function initTicketing(client, guild) {
+    setInterval(async() => {
+        let tickets = await tickets_model.find({});
+        let updated = [];
+        let pending = [];
+        for(let ticket of tickets) {
+            let hours = ticket.hours_until_deletion + 1;
+            let channel = client.channels.cache.get(ticket.channel_id);
+            let author = client.users.cache.get(ticket.author_id);
+            if(hours === 24) {
+                const message_embed = new Discord.MessageEmbed()
+                    .setAuthor(`Pending Deletion`, author.avatarURL())
+                    .setDescription(`Since there has been no activity in this ticket the past 24 hours, It'll get auto-deleted in 12 hours! Please send a message now if you wish to keep this ticket.`)
+                    .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
+                    .setColor(config.BOT_SETTINGS.EMBED_COLORS.MAIN);
+                channel.send(message_embed);
+                channel.send(`<@${author.id}>`).then(message => {
+                    setTimeout(() => {
+                        message.delete();
+                    }, 1000 * 5);
+                });
+                pending.push(author.tag)
+            } else if(hours >= 36) {
+                try {
+                    await tickets_model.deleteOne({ channel_id: ticket.channel_id });
+                    const channel = client.channels.cache.get(ticket.channel_id);
+                    channel.delete();
+                    logging.info(client, `Auto-Deleted the ticket for ${author.tag}.`)
+                } catch(error) {
+                    let message_embed = new Discord.MessageEmbed()
+                        .setAuthor(`ERROR`, author.avatarURL())
+                        .setDescription(`There was an error with MongoDB, Your ticket couldn't be Auto-Deleted.`)
+                        .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
+                        .setColor(config.BOT_SETTINGS.EMBED_COLORS.ERROR);
+
+                    channel.send(message_embed);
+                    logging.error(client, `Couldn't delete the ticket for ${author.tag}\n\nERROR\n${error}`);
+                }
+            }
+            tickets_model.updateOne({ author_id: ticket.author_id }, { hours_until_deletion: hours }, (error => {
+                if(error) {
+                    logging.error(client, `There was an error updating ticket ${ticket.channel_id}!\n\nERROR:\n${error}`);
+                } else if(!error) {
+                    updated.push(ticket.channel_id);
+                }
+            }));
+        }
+        logging.info(`Successfully updated ${updated.length} tickets! There are ${pending.length} new tickets that are pending for deletion! Please check out the tickets for ${pending.join(', ')}!`);
+    }, 1000 * 3600);
+};
+
+async function initPunishments(client, guild) {
+    setInterval(async() => {
+        let punishments = await punishents_model.find({});
+        let punished = [];
+        for(let punishment of punishments) {
+            let channel = client.channels.cache.get(config.CHANNELS.PUNISHMENTS_LOGGING);
+            const message_embed = new Discord.MessageEmbed()
+                .setTitle(`Server Punishment`)
+                .setThumbnail(`https://minotar.net/helm/${punishment.moderator}`)
+                .setDescription(`${punishment.moderator} punished ${punishment.player_name} on ${punishment.what_server}!\n\nType: ${punishment.type}\nReason: ${punishment.reason}\nLength: ${punishment.length}`)
+                .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
+                .setColor(config.BOT_SETTINGS.EMBED_COLORS.MAIN);
+            channel.send(message_embed);
+            punished.push(punishment.player_name);
+            punishment.delete();
+        }
+        if(punished.length >= 1) {
+            logging.info(client, `Fetched ${punished.length} punishments! Laugh at ${punished.join(', ')}! LMFAO`);
+        }
+    }, 1000 * 60);
+};
+
+async function initDonations(client, guild) {
+    setInterval(async() => {
+        let donations = await donations_model.find({});
+        let donators = [];
+        for(let donation of donations) {
+            let channel = client.channels.cache.get(config.CHANNELS.DONATIONS_LOGGING);
+            const message_embed = new Discord.MessageEmbed()
+                .setTitle(`Server Donation`)
+                .setThumbnail(`https://minotar.net/helm/${donation.player_name}`)
+                .setDescription(`Thank you ${donation.player_name} for buying ${donation.bought_item}!\n\nDonation: ${donation.moneyz_got}\nServer: ${donation.what_server}`)
+                .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
+                .setColor(config.BOT_SETTINGS.EMBED_COLORS.MAIN);
+            channel.send(message_embed);
+            donators.push(donation.player_name);
+            donation.delete();
+        }
+        if(donators.length >= 1) {
+            logging.info(client, `Fetched ${donators.length} donations! Thanks to ${donators.join(', ')}! uwu`);
+        }
+    }, 1000 * 60);
+};
 
 async function register_events(directory = 'events') {
     let files = await fs.readdirSync(path.join(__dirname, directory));
@@ -88,53 +250,3 @@ async function register_events(directory = 'events') {
         }
     }
 };
-
-async function refresh_linking(client, guild) {
-    guild.members.cache.forEach(async(member) => {
-        if(member.id === 799057021475356702) {
-            member.setNickname("[-] Genversa Bot");
-        }
-        let linking_roles = config.ROLES.LINKING;
-        let model = await linking_model.findOne({ discord_id: member.id });
-        if(model) {
-            member.setNickname(`${model.player_name} | ${model.player_rank}`);
-            if(model.is_verified === false) return;
-            linking_roles.forEach(role_id => {
-                let role = guild.roles.cache.get(role_id);
-                if(member.roles.cache.has(role.id)) {
-                    if(model.player_rank !== role.name) {
-                        logging.info(client, `Removed ${role.name} from ${member.user.tag}!`);
-                        member.roles.remove(role);
-                    }
-                }
-            });
-            let role_needed;
-            let role_linked = guild.roles.cache.find(check_role => check_role.id ===config.ROLES.LINKED);
-            if(!member.roles.cache.has(role_linked.id)) {
-                member.roles.add(role_linked);
-                logging.info(client, `Added ${role_linked.name} to ${member.user.tag} as they linked their account!`);
-            }
-            role_needed = guild.roles.cache.find(check_role => check_role.name === model.player_rank);
-            if(role_needed) {
-                if(!member.roles.cache.has(role_needed.id)) {
-                    member.roles.add(role_needed);
-                    logging.info(client, `Added ${role_needed.name} to ${member.user.tag} as they linked their account!`);
-                }
-            }
-        } else if(!model) {
-            let role = guild.roles.cache.get(config.ROLES.LINKED);
-            if(member.roles.cache.has(role.id)) {
-                member.roles.remove(role);
-                logging.info(client, `Removed ${role.name} from ${member.user.tag} as they unlinked their account!`);
-            }
-
-            linking_roles.forEach(role_id => {
-                let role = guild.roles.cache.get(role_id);
-                if(member.roles.cache.has(role)) {
-                    logging.info(client, `Removed ${role.name} from ${member.user.tag} as they unlinked their account!`);
-                    member.roles.remove(role);
-                }
-            }); 
-        }
-    });
-}

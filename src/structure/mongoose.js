@@ -23,5 +23,8 @@ module.exports = {
         mongoose.connection.on('disconnected', () => {
             logging.warn(client, `Disconnected from MongoDB!`);
         });
+    },
+    connection: () => {
+        return mongoose.connection;
     }
 }

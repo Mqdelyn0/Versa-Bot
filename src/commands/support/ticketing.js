@@ -46,7 +46,8 @@ module.exports = {
                         let model = new ticket_model({
                             channel_id: channel.id,
                             author_id: message.author.id,
-                            reason: reason
+                            reason: reason,
+                            hours_until_deletion: 0
                         });
 
                         try {

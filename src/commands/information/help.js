@@ -14,7 +14,9 @@ module.exports = {
             '-botinfo | View bot information',
             '-guildinfo | View guild information',
             '-ticket help | View ticketing help',
-            '-suggest help | View suggestions help'
+            '-suggest help | View suggestions help',
+            '-updatestats | Update server stats',
+            '-fetchdata | Fetch latest donos/puns'
         ];
 
         const message_embed = new Discord.MessageEmbed()
