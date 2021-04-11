@@ -1,0 +1,55 @@
+{
+    "BOT_SETTINGS":
+    {
+        "BOT_TOKEN": "ODIxMDYxNTYzOTYwMDAwNTMy.YE-PKw.mGEfzHszCDLYT7un67K6FFdauwo",
+        "MONGODB_URL": "mongodb://GenversaMongo:skMaxCECjRFbP5Heb89QZZ5M2S9UVrwZYwqsWeSccye47pNFqL@51.79.32.219:27017/Genversa?authSource=Genversa&readPreference=primary&appname=MongoDB%20Compass&ssl=false",
+        "GUILD_ID": "820753732631134208",
+        "EMBED_AUTHOR": "Coded by Madelyn | Versa Realms",
+        "PREFIX": "-",
+        "EMBED_COLORS": {
+            "MAIN": "#FFBB33",
+            "ERROR": "#FF9999",
+            "SUCCESS": "#99FF99"
+        }
+    },
+
+    "CHANNELS":
+    {
+
+        "MEMBER_COUNT": "820829537355956244",
+
+        "WELCOME_LEAVE": "821061860274995210",
+        "BOT_COMMANDS": "821061913227558912",
+
+        "SUGGESTIONS_CREATE": "830490117642125312",
+        "SUGGESTIONS_ACCEPT": "830490204082929694",
+        "SUGGESTIONS_DENIED": "830490204082929694",
+
+        "VERSA_BOT_LOGGING": "821083560977891358",
+        "PUNISHMENTS_LOGGING": "798692883178848287"
+    },
+
+    "ROLES": 
+    {
+
+        "SUPPORT_ROLE": "830489928911028264",
+
+        "LINKED": "830489442443198514",
+        "LINKING": [
+            "830489438340775936",
+            "830489436943810570",
+            "830489436340617246",
+            "830489436277702684",
+            "830489435069087744",
+            "830489425192419389",
+            "830489312264978463",
+            "830489194853564467",
+            "830488822092922971",
+            "830488776244592640",
+            "830488691851132938",
+            "830488626436767744",
+            "830488552810610708",
+            "830488504219598868"
+        ]
+    }
+}
