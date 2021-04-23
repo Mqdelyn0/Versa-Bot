@@ -18,7 +18,7 @@ module.exports = {
                 .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR);
             return message.channel.send(message_embed);
         } else if(arguments.length !== 0) {
-            if(arguments[0] !== "unlink" || arguments[0] !== "info") {
+            if(!["unlink", "info"].includes(arguments[0])) {
                 let model = await linking_model.findOne({ linking_code: arguments[0] });
                 if(model) {
                     if(model.linking_needs_confirmation === true || model.is_linked === true) {
@@ -50,7 +50,7 @@ module.exports = {
                         .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR);
                     return message.channel.send(message_embed);
                 }
-            } else if(arguments[0] === "unlink" || arguments[0] === "info") {
+            } else if(["unlink", "info"].includes(arguments[0])) {
                 if(arguments[0] === "unlink") {
                     linking_model.deleteOne({ discord_id: message.author.id }, (error) => {
                         if(error) {
