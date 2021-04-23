@@ -28,7 +28,7 @@ module.exports = {
                             .setColor(config.BOT_SETTINGS.EMBED_COLORS.ERROR)
                             .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR);
                         return message.channel.send(message_embed);
-                    } else if(model.linking_needs_confirmation === false) {
+                    } else if(model.linking_needs_confirmation === false && model.is_linked === false) {
                         linking_model.updateOne({ linking_code: arguments[0] }, { linking_needs_confirmation: true, discord_tag: message.author.tag, discord_id: message.author.id}, (error) => {
                             if(error) {
                                 return logger.error(`There was a error updating a Linking model for ${message.author.tag}!\n\nError: ${error}`);
@@ -52,23 +52,32 @@ module.exports = {
                 }
             } else if(["unlink", "info"].includes(arguments[0])) {
                 if(arguments[0] === "unlink") {
-                    linking_model.deleteOne({ discord_id: message.author.id }, (error) => {
-                        if(error) {
-                            let message_embed = new Discord.MessageEmbed()
-                                .setAuthor("ERROR", message.author.avatarURL())
-                                .setDescription(`Couldn't unlink you! Maybe you were never linked?`)
-                                .setColor(config.BOT_SETTINGS.EMBED_COLORS.ERROR)
-                                .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR);
-                            return message.channel.send(message_embed);
-                        } else if (!error) {
-                            let message_embed = new Discord.MessageEmbed()
-                                .setAuthor("SUCCESS", message.author.avatarURL())
-                                .setDescription(`Successfully unlinked you!`)
-                                .setColor(config.BOT_SETTINGS.EMBED_COLORS.ERROR)
-                                .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR);
-                            return message.channel.send(message_embed);
-                        }
-                    });
+                    if(model) {
+                        linking_model.deleteOne({ discord_id: message.author.id }, (error) => {
+                            if(error) {
+                                let message_embed = new Discord.MessageEmbed()
+                                    .setAuthor("ERROR", message.author.avatarURL())
+                                    .setDescription(`Couldn't unlink you! Maybe you were never linked?`)
+                                    .setColor(config.BOT_SETTINGS.EMBED_COLORS.ERROR)
+                                    .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR);
+                                return message.channel.send(message_embed);
+                            } else if (!error) {
+                                let message_embed = new Discord.MessageEmbed()
+                                    .setAuthor("SUCCESS", message.author.avatarURL())
+                                    .setDescription(`Successfully unlinked you!`)
+                                    .setColor(config.BOT_SETTINGS.EMBED_COLORS.ERROR)
+                                    .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR);
+                                return message.channel.send(message_embed);
+                            }
+                        });
+                    } else if(!model) {
+                        let message_embed = new Discord.MessageEmbed()
+                            .setAuthor("ERROR", message.author.avatarURL())
+                            .setDescription(`Couldn't unlink you! Maybe you were never linked?`)
+                            .setColor(config.BOT_SETTINGS.EMBED_COLORS.ERROR)
+                            .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR);
+                        return message.channel.send(message_embed);
+                    }
                 }
             }
         }
