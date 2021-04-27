@@ -6,8 +6,8 @@ const logging = require('../../structure/logging');
 module.exports = {
     commands: ['reactionrole', 'rrole'],
     expected_args: '(create/delete) (channel id) (message id) (role id) (emoji id)',
-    min_args: 4,
-    max_args: 4,
+    min_args: 5,
+    max_args: 5,
     permissions: [],
     required_roles: ["Owner", "Manager", "Developer", "Admin"],
     async callback(client, message, arguments, raw_text) {
