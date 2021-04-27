@@ -135,6 +135,7 @@ module.exports = {
                 }
             } else if(arguments[0] === `delete`) {
                 let model = await ticket_model.findOne({ channel_id: message.channel.id });
+                let author = client.users.cache.get(`${model.author_id}`);
 
                 if(!model) {
                     message_embed = new Discord.MessageEmbed()
@@ -146,7 +147,6 @@ module.exports = {
                     return message.channel.send(message_embed);
                 } else if(model) {
                     try {
-                        let author = client.channels.cache.get(`${model.author_id}`);
                         logging.info(client, `Deleted the ticket for ${author.tag}.`);
                         await ticket_model.deleteOne({ channel_id: message.channel.id });
                         const channel = message.channel;
@@ -159,7 +159,7 @@ module.exports = {
                             .setColor(config.BOT_SETTINGS.EMBED_COLORS.ERROR);
 
                         message.channel.send(message_embed);
-                        return logging.error(error, `Couldn't delete the ticket for ${message.author.tag}\n\nERROR\n${error}`);
+                        return logging.error(client, `Couldn't delete the ticket for ${message.author.tag}\n\nERROR\n${error}`);
                     }
                 }
             } else {
