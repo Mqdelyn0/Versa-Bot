@@ -159,7 +159,7 @@ module.exports = {
                             .setColor(config.BOT_SETTINGS.EMBED_COLORS.ERROR);
 
                         message.channel.send(message_embed);
-                        return logging.error(`Couldn't delete the ticket for ${message.author.tag}\n\nERROR\n${error}`);
+                        return logging.error(error, `Couldn't delete the ticket for ${message.author.tag}\n\nERROR\n${error}`);
                     }
                 }
             } else {
