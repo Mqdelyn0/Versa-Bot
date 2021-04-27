@@ -146,48 +146,50 @@ async function initTicketing(client, guild) {
         let updated = [];
         let pending = [];
         for(let ticket of tickets) {
-            let hours = ticket.hours_until_deletion + 1;
-            let channel = client.channels.cache.get(ticket.channel_id);
-            let author = client.users.cache.get(ticket.author_id);
-            if(hours === 24) {
-                const message_embed = new Discord.MessageEmbed()
-                    .setAuthor(`Pending Deletion`, author.avatarURL())
-                    .setDescription(`Since there has been no activity in this ticket the past 24 hours, It'll get auto-deleted in 12 hours! Please send a message now if you wish to keep this ticket.`)
-                    .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
-                    .setColor(config.BOT_SETTINGS.EMBED_COLORS.MAIN);
-                channel.send(message_embed);
-                channel.send(`<@${author.id}>`).then(message => {
-                    setTimeout(() => {
-                        message.delete();
-                    }, 1000 * 5);
-                });
-                pending.push(author.tag)
-            } else if(hours >= 36) {
-                try {
-                    await tickets_model.deleteOne({ channel_id: ticket.channel_id });
-                    const channel = client.channels.cache.get(ticket.channel_id);
-                    channel.delete();
-                    logging.info(client, `Auto-Deleted the ticket for ${author.tag}.`)
-                } catch(error) {
-                    let message_embed = new Discord.MessageEmbed()
-                        .setAuthor(`ERROR`, author.avatarURL())
-                        .setDescription(`There was an error with MongoDB, Your ticket couldn't be Auto-Deleted.`)
+            if(ticket.evade_auto_deletion !== true) {
+                let hours = ticket.hours_until_deletion + 1;
+                let channel = client.channels.cache.get(ticket.channel_id);
+                let author = client.users.cache.get(ticket.author_id);
+                if(hours === 24) {
+                    const message_embed = new Discord.MessageEmbed()
+                        .setAuthor(`Pending Deletion`, author.avatarURL())
+                        .setDescription(`Since there has been no activity in this ticket the past 24 hours, It'll get auto-deleted in 12 hours! Please send a message now if you wish to keep this ticket.`)
                         .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
-                        .setColor(config.BOT_SETTINGS.EMBED_COLORS.ERROR);
-
+                        .setColor(config.BOT_SETTINGS.EMBED_COLORS.MAIN);
                     channel.send(message_embed);
-                    logging.error(client, `Couldn't delete the ticket for ${author.tag}\n\nERROR\n${error}`);
+                    channel.send(`<@${author.id}>`).then(message => {
+                        setTimeout(() => {
+                            message.delete();
+                        }, 1000 * 5);
+                    });
+                    pending.push(author.tag);
+                } else if(hours >= 36) {
+                    try {
+                        await tickets_model.deleteOne({ channel_id: ticket.channel_id });
+                        const channel = client.channels.cache.get(ticket.channel_id);
+                        channel.delete();
+                        logging.info(client, `Auto-Deleted the ticket for ${author.tag}.`)
+                    } catch(error) {
+                        let message_embed = new Discord.MessageEmbed()
+                            .setAuthor(`ERROR`, author.avatarURL())
+                            .setDescription(`There was an error with MongoDB, Your ticket couldn't be Auto-Deleted.`)
+                            .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
+                            .setColor(config.BOT_SETTINGS.EMBED_COLORS.ERROR);
+    
+                        channel.send(message_embed);
+                        logging.error(client, `Couldn't delete the ticket for ${author.tag}\n\nERROR\n${error}`);
+                    }
                 }
+                tickets_model.updateOne({ author_id: ticket.author_id }, { hours_until_deletion: hours }, (error => {
+                    if(error) {
+                        logging.error(client, `There was an error updating ticket ${ticket.channel_id}!\n\nERROR:\n${error}`);
+                    } else if(!error) {
+                        updated.push(ticket.channel_id);
+                    }
+                }));
+            logging.info(client, `Successfully updated ${updated.length} tickets! There are ${pending.length} new tickets that are pending for deletion! Please check out the tickets for ${pending.join(', ')}!`);
             }
-            tickets_model.updateOne({ author_id: ticket.author_id }, { hours_until_deletion: hours }, (error => {
-                if(error) {
-                    logging.error(client, `There was an error updating ticket ${ticket.channel_id}!\n\nERROR:\n${error}`);
-                } else if(!error) {
-                    updated.push(ticket.channel_id);
-                }
-            }));
         }
-        logging.info(`Successfully updated ${updated.length} tickets! There are ${pending.length} new tickets that are pending for deletion! Please check out the tickets for ${pending.join(', ')}!`);
     }, 1000 * 3600);
 };
 

@@ -10,7 +10,7 @@ module.exports = async(client, reaction, user) => {
     if(!client || !reaction || !user || !member) {
         return;
     }
-    let model = await reaction_role_model.findOne({ message_id: reaction.message.id });
+    let model = await reaction_role_model.findOne({ message_id: reaction.message.id, emoji_id: reaction.emoji.id });
 
     if(!model) {
         return;

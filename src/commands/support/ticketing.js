@@ -14,13 +14,51 @@ module.exports = {
         if(arguments[0] === `help`) {
             message_embed = new Discord.MessageEmbed()
                 .setAuthor(`Ticketing Commands`, message.author.avatarURL())
-                .setDescription(`Here's a list of all the commands you can do!\n\n-ticket create (reason)\n-ticket delete`)
+                .setDescription(`Here's a list of all the commands you can do!\n\n-ticket create (reason)\n-ticket delete\n-ticket autodeletion (true/false)`)
                 .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
                 .setColor(config.BOT_SETTINGS.EMBED_COLORS.MAIN);
 
             return message.channel.send(message_embed)
         } else if(arguments[0] !== `help` && arguments.length >= 1) {
-            if(arguments[0] === `create`) {
+            if(arguments[0] === `autodeletion`) {
+                if(![`true`, `false`].includes(arguments[1])) {
+                    message_embed = new Discord.MessageEmbed()
+                        .setAuthor(`ERROR`, message.author.avatarURL())
+                        .setDescription(`You can only use true or false in this command!`)
+                        .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
+                        .setColor(config.BOT_SETTINGS.EMBED_COLORS.MAIN);
+
+                    return message.channel.send(message_embed)
+                }
+                let new_mode;
+                if(arguments[1] === "true") {
+                    new_mode = true;
+                } else if(arguments[1] === "false") {
+                    new_mode = false;
+                }
+                let model = await ticket_model.findOne({ channel_id: message.channel.id });
+                let user = client.channels.cache.get(`${model.author_id}`);
+                try {
+                    await ticket_model.updateOne({ channel_id: message.channel.id }, { evade_auto_deletion: new_mode });
+                    message_embed = new Discord.MessageEmbed()
+                        .setAuthor(`SUCCESS`, message.author.avatarURL())
+                        .setDescription(`You set the evade auto-deletion of this to ${new_mode}`)
+                        .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
+                        .setColor(config.BOT_SETTINGS.EMBED_COLORS.SUCCESS);
+
+                    message.channel.send(message_embed);
+                    return logging.info(client, `Set the evade auto-deletion of ${user.tag}'s ticket to ${new_mode}`);
+                } catch(error) {
+                    message_embed = new Discord.MessageEmbed()
+                        .setAuthor(`ERROR`, message.author.avatarURL())
+                        .setDescription(`There was an error with MongoDB! Please try again.`)
+                        .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
+                        .setColor(config.BOT_SETTINGS.EMBED_COLORS.ERROR);
+
+                    message.channel.send(message_embed);
+                    return logging.info(client, `There was an error whilst updating a MongoDB Document for ${user.tag}'s ticket!\n\nERROR\n${error}`);
+                }
+            } else if(arguments[0] === `create`) {
                 let model = await ticket_model.findOne({ author_id: message.author.id });
                 let reason = arguments.slice(1).join(' ');
                 if(!reason) {
@@ -47,6 +85,7 @@ module.exports = {
                             channel_id: channel.id,
                             author_id: message.author.id,
                             reason: reason,
+                            evade_auto_deletion: false,
                             hours_until_deletion: 0
                         });
 
@@ -107,10 +146,11 @@ module.exports = {
                     return message.channel.send(message_embed);
                 } else if(model) {
                     try {
+                        let author = client.channels.cache.get(`${model.author_id}`);
+                        logging.info(client, `Deleted the ticket for ${author.tag}.`);
                         await ticket_model.deleteOne({ channel_id: message.channel.id });
                         const channel = message.channel;
                         channel.delete();
-                        logging.info(client, `Deleted the ticket for ${message.author.tag}.`)
                     } catch(error) {
                         message_embed = new Discord.MessageEmbed()
                             .setAuthor(`ERROR`, message.author.avatarURL())
