@@ -1,6 +1,6 @@
 const Discord = require('discord.js');
 const config = require('../../../config.json');
-const reaction_role_model = require('../../database_models/reaction_role.js');
+const reaction_role_model = require('../../database_models/reactionrole.js');
 const logging = require('../../structure/logging');
 
 module.exports = {
@@ -52,29 +52,7 @@ module.exports = {
 
             return message.channel.send(message_embed);
         }
-
-        let model = await reaction_role_model.findOne({ message_id: reaction_message.id }, (error, model) => {
-            if(error) {
-                const message_embed = new Discord.MessageEmbed()
-                    .setAuthor(`ERROR`, message.author.avatarURL())
-                    .setDescription(`There was a error with MongoDB, Try again later.`)
-                    .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
-                    .setColor(config.BOT_SETTINGS.EMBED_COLORS.ERROR);
-
-                message.channel.send(message_embed);
-                return logging.error(client, `Failed to fetch a reaction role from MongoDB.\n\nERROR\n${error}`);
-            }
-        });
-
-        if(model) {
-            const message_embed = new Discord.MessageEmbed()
-                .setAuthor(`ERROR`, message.author.avatarURL())
-                .setDescription(`A reaction role already exists for ${arguments[1]}!`)
-                .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
-                .setColor(config.BOT_SETTINGS.EMBED_COLORS.ERROR);
-
-            return message.channel.send(message_embed);
-        } else if (!model) {
+        else {
             let model = new reaction_role_model({
                 message_id: reaction_message.id,
                 emoji_id: emoji.id,
