@@ -1,7 +1,7 @@
 const Discord = require('discord.js');
 const config = require('../../../config.json');
 const errors = require('../../structure/errors.js');
-const reaction_role_model = require('../../database_models/reaction_role.js');
+const reaction_role_model = require('../../database_models/reactionrole.js');
 const logging = require('../../structure/logging');
 
 module.exports = async(client, reaction, user) => {
