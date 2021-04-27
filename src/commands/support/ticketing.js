@@ -17,7 +17,6 @@ module.exports = {
                 .setDescription(`Here's a list of all the commands you can do!\n\n-ticket create (reason)\n-ticket delete\n-ticket autodeletion (true/false)`)
                 .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
                 .setColor(config.BOT_SETTINGS.EMBED_COLORS.MAIN);
-
             return message.channel.send(message_embed)
         } else if(arguments[0] !== `help` && arguments.length >= 1) {
             if(arguments[0] === `autodeletion`) {
