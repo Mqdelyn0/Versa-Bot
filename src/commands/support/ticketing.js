@@ -37,7 +37,7 @@ module.exports = {
                     new_mode = false;
                 }
                 let model = await ticket_model.findOne({ channel_id: message.channel.id });
-                let user = client.channels.cache.get(`${model.author_id}`);
+                let user = client.users.cache.get(`${model.author_id}`);
                 try {
                     await ticket_model.updateOne({ channel_id: message.channel.id }, { evade_auto_deletion: new_mode });
                     message_embed = new Discord.MessageEmbed()
