@@ -123,14 +123,16 @@ async function initStatus(client, guild) {
     let status_list = [
         "PLAYING|play.mineversa.net",
         "PLAYING|play.genversa.net",
+        "PLAYING|subtropic.minehut.gg",
         "WATCHING|over <users> users",
         "WATCHING|over tickets (-help)",
     ];
     for(let status of status_list) {
         let data = status.split('|');
+        let guild = client.guilds.cache.get(`${config.BOT_SETTINGS.GUILD_ID}`);
         client.user.setPresence({ 
             activity: {
-                name: `${data[1].replace(`<users>`, `${client.users.cache.size}`)}`,
+                name: `${data[1].replace(`<users>`, `${guild.memberCount}`)}`,
                 type: `${data[0]}`
             },
             status: "online"
@@ -187,8 +189,12 @@ async function initTicketing(client, guild) {
                         updated.push(ticket.channel_id);
                     }
                 }));
-            logging.info(client, `Successfully updated ${updated.length} tickets! There are ${pending.length} new tickets that are pending for deletion! Please check out the tickets for ${pending.join(', ')}!`);
             }
+        }
+        if(pending.length === 0) {
+            logging.info(client, `No tickets were updated this hour!`);
+        } else if(pending >>> 0) {
+            logging.info(client, `Successfully updated ${updated.length} tickets! There are ${pending.length} new tickets that are pending for deletion! Please check out the tickets for ${pending.join(', ')}!`);
         }
     }, 1000 * 3600);
 };

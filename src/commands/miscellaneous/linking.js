@@ -52,6 +52,7 @@ module.exports = {
                 }
             } else if(["unlink", "info"].includes(arguments[0])) {
                 if(arguments[0] === "unlink") {
+                    let model = await linking_model.findOne({ discord_id: message.author.id });
                     if(model) {
                         linking_model.deleteOne({ discord_id: message.author.id }, (error) => {
                             if(error) {
@@ -65,7 +66,7 @@ module.exports = {
                                 let message_embed = new Discord.MessageEmbed()
                                     .setAuthor("SUCCESS", message.author.avatarURL())
                                     .setDescription(`Successfully unlinked you!`)
-                                    .setColor(config.BOT_SETTINGS.EMBED_COLORS.ERROR)
+                                    .setColor(config.BOT_SETTINGS.EMBED_COLORS.SUCCESS)
                                     .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR);
                                 return message.channel.send(message_embed);
                             }
