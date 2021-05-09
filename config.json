@@ -2,7 +2,7 @@
     "BOT_SETTINGS":
     {
         "BOT_TOKEN": "ODIxMDYxNTYzOTYwMDAwNTMy.YE-PKw.mGEfzHszCDLYT7un67K6FFdauwo",
-        "MONGODB_URL": "mongodb://GenversaMongo:skMaxCECjRFbP5Heb89QZZ5M2S9UVrwZYwqsWeSccye47pNFqL@51.79.32.219:27017/Genversa?authSource=Genversa&readPreference=primary&appname=MongoDB%20Compass&ssl=false",
+        "MONGODB_URL": "mongodb://GenversaMongo:skMaxCECjRFbP5Heb89QZZ5M2S9UVrwZYwqsWeSccye47pNFqL@51.79.32.219:27017/Genversa?retryWrites=true&w=majority",
         "GUILD_ID": "798546331852472350",
         "EMBED_AUTHOR": "Coded by Madelyn | Versa Realms",
         "PREFIX": "-",

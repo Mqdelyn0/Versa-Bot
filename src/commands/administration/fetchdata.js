@@ -2,6 +2,7 @@ const Discord = require('discord.js');
 const config = require('../../../config.json');
 const punishents_model = require('../../database_models/punishment.js');
 const donations_model = require('../../database_models/donation.js');
+const logging = require('../../structure/logging.js');
 
 module.exports = {
     commands: ['fetchdata', 'fdata', 'fd'],
