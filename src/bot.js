@@ -204,7 +204,7 @@ async function initLinking(client, guild) {
                             logging.info(client, `Added ${role_needed.name} to ${member.user.tag} as they linked their account!`);
                         }
                     }
-                    messageEmbed.setDescription(`Updated ${member.user.tag} (${membersUpdated}/${memberCount})\nNew Nick: ${member.nickname}\nNew Roles: ${member.roles.cache.map().join(`, `)}`)
+                    messageEmbed.setDescription(`Updated ${member.user.tag} (${membersUpdated}/${memberCount})\nNew Nick: ${member.nickname}\nNew Roles: ${member.roles.cache.join(`, `)}`)
                     channelDebug.send(messageEmbed);
                 }
             }
@@ -225,6 +225,7 @@ async function initLinking(client, guild) {
         }
         membersUpdated++;
     };
+    await(5000);
     let difference = getTimeDiffAndPrettyText(startingNow);
     messageEmbed.setDescription(`Finished looping through ${memberCount} users in ${difference.minutes} minutes and ${difference.seconds} seconds!`);
     channelDebug.send(messageEmbed);
