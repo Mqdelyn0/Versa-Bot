@@ -172,7 +172,7 @@ async function initLinking(client, guild) {
         .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
         .setColor(config.BOT_SETTINGS.EMBED_COLORS.MAIN)
         .setDescription(`Finished a loop, Starting a New Loop with ${memberCount} users to loop`)
-    channelDebug.send(messageEmbed);
+    //channelDebug.send(messageEmbed);
     for(let member of members) {
         let linking_roles = config.ROLES.LINKING;
         let model = await linking_model.findOne({ discord_id: member.id });
