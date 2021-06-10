@@ -225,10 +225,10 @@ async function initLinking(client, guild) {
         }
         membersUpdated++;
     };
-    await(5000);
-    let difference = getTimeDiffAndPrettyText(startingNow);
-    messageEmbed.setDescription(`Finished looping through ${memberCount} users in ${difference.minutes} minutes and ${difference.seconds} seconds!`);
-    channelDebug.send(messageEmbed);
+    //await(5000);
+    //let difference = getTimeDiffAndPrettyText(startingNow);
+    //messageEmbed.setDescription(`Finished looping through ${memberCount} users in ${difference.minutes} minutes and ${difference.seconds} seconds!`);
+    //channelDebug.send(messageEmbed);
     initLinking(client,guild);
 };
 
