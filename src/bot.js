@@ -19,6 +19,96 @@ function clean(text) {
         return text;
   }
 
+  function getTimeDiffAndPrettyText(oDatePublished) {
+
+    var oResult = {};
+  
+    var oToday = new Date();
+  
+    var nDiff = oToday.getTime() - oDatePublished.getTime();
+  
+    // Get diff in days
+    oResult.days = Math.floor(nDiff / 1000 / 60 / 60 / 24);
+    nDiff -= oResult.days * 1000 * 60 * 60 * 24;
+  
+    // Get diff in hours
+    oResult.hours = Math.floor(nDiff / 1000 / 60 / 60);
+    nDiff -= oResult.hours * 1000 * 60 * 60;
+  
+    // Get diff in minutes
+    oResult.minutes = Math.floor(nDiff / 1000 / 60);
+    nDiff -= oResult.minutes * 1000 * 60;
+  
+    // Get diff in seconds
+    oResult.seconds = Math.floor(nDiff / 1000);
+  
+    // Render the diffs into friendly duration string
+  
+    // Days
+    var sDays = '00';
+    if (oResult.days > 0) {
+        sDays = String(oResult.days);
+    }
+    if (sDays.length === 1) {
+        sDays = '0' + sDays;
+    }
+  
+    // Format Hours
+    var sHour = '00';
+    if (oResult.hours > 0) {
+        sHour = String(oResult.hours);
+    }
+    if (sHour.length === 1) {
+        sHour = '0' + sHour;
+    }
+  
+    //  Format Minutes
+    var sMins = '00';
+    if (oResult.minutes > 0) {
+        sMins = String(oResult.minutes);
+    }
+    if (sMins.length === 1) {
+        sMins = '0' + sMins;
+    }
+  
+    //  Format Seconds
+    var sSecs = '00';
+    if (oResult.seconds > 0) {
+        sSecs = String(oResult.seconds);
+    }
+    if (sSecs.length === 1) {
+        sSecs = '0' + sSecs;
+    }
+  
+    //  Set Duration
+    var sDuration = sDays + ':' + sHour + ':' + sMins + ':' + sSecs;
+    oResult.duration = sDuration;
+  
+    // Set friendly text for printing
+    if(oResult.days === 0) {
+  
+        if(oResult.hours === 0) {
+  
+            if(oResult.minutes === 0) {
+                var sSecHolder = oResult.seconds > 1 ? 'Seconds' : 'Second';
+                oResult.friendlyNiceText = oResult.seconds + ' ' + sSecHolder + ' ago';
+            } else { 
+                var sMinutesHolder = oResult.minutes > 1 ? 'Minutes' : 'Minute';
+                oResult.friendlyNiceText = oResult.minutes + ' ' + sMinutesHolder + ' ago';
+            }
+  
+        } else {
+            var sHourHolder = oResult.hours > 1 ? 'Hours' : 'Hour';
+            oResult.friendlyNiceText = oResult.hours + ' ' + sHourHolder + ' ago';
+        }
+    } else { 
+        var sDayHolder = oResult.days > 1 ? 'Days' : 'Day';
+        oResult.friendlyNiceText = oResult.days + ' ' + sDayHolder + ' ago';
+    }
+  
+    return oResult;
+  }
+
 client.on("message", message => {
     const args = message.content.split(" ").slice(1);
    
@@ -44,7 +134,7 @@ client.on('ready', async() => {
     register_commands();
     register_events();
     mongoose.init(client);
-    let guild = client.guilds.cache.get(config.BOT_SETTINGS.GUILD_ID);
+    let guild = await client.guilds.cache.get(config.BOT_SETTINGS.GUILD_ID);
     initLinking(client, guild);
     initTicketing(client, guild);
     initPunishments(client, guild);
@@ -71,58 +161,79 @@ async function register_commands(directory = 'commands') {
 };
 
 async function initLinking(client, guild) {
-    setInterval(() => {
-        guild.members.cache.forEach(async(member) => {
-            let linking_roles = config.ROLES.LINKING;
-            let model = await linking_model.findOne({ discord_id: member.id });
-            if(model) {
-                member.setNickname(`${model.player_name} | ${model.player_rank}`);
-                if(model.is_verified === false) return;
-                linking_roles.forEach(role_id => {
-                    let role = guild.roles.cache.get(role_id);
-                    if(member.roles.cache.has(role.id)) {
-                        if(model.player_rank !== role.name) {
-                            logging.info(client, `Removed ${role.name} from ${member.user.tag}!`);
-                            member.roles.remove(role);
+    let channelDebug = guild.channels.cache.get(`852627152843309056`);
+    let memberCount = guild.memberCount;
+    let membersUpdated = 0;
+    let members = [];
+    let startingNow = new Date();
+    guild.members.cache.forEach(member => members.push(member));
+    let messageEmbed = new Discord.MessageEmbed()
+        .setTitle(`Linking Update`)
+        .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
+        .setColor(config.BOT_SETTINGS.EMBED_COLORS.MAIN)
+        .setDescription(`Finished a loop, Starting a New Loop with ${memberCount} users to loop`)
+    channelDebug.send(messageEmbed);
+    for(let member of members) {
+        let linking_roles = config.ROLES.LINKING;
+        let model = await linking_model.findOne({ discord_id: member.id });
+        if(model) {
+            if(member.nickname) {
+                if(!member.nickname.includes(`[${model.player_rank}]`) || !member.nickname.includes(`${model.player_name}`)) {
+                    await delay(500);
+                    member.setNickname(`[${model.player_rank}] ${model.player_name}`);
+                    if(model.is_verified === false) return;
+                    linking_roles.forEach(role_id => {
+                        let role = guild.roles.cache.get(role_id);
+                        if(member.roles.cache.has(role.id)) {
+                            if(model.player_rank !== role.name) {
+                                logging.info(client, `Removed ${role.name} from ${member.user.tag}!`);
+                                member.roles.remove(role);
+                            }
+                        }
+                    });
+                    let role_needed;
+                    let role_linked = guild.roles.cache.find(check_role => check_role.id ===config.ROLES.LINKED);
+                    if(!member.roles.cache.has(role_linked.id)) {
+                        member.roles.add(role_linked);
+                        logging.info(client, `Added ${role_linked.name} to ${member.user.tag} as they linked their account!`);
+                    }
+                    role_needed = guild.roles.cache.find(check_role => check_role.name === model.player_rank);
+                    if(role_needed) {
+                        if(!member.roles.cache.has(role_needed.id)) {
+                            member.roles.add(role_needed);
+                            logging.info(client, `Added ${role_needed.name} to ${member.user.tag} as they linked their account!`);
                         }
                     }
-                });
-                let role_needed;
-                let role_linked = guild.roles.cache.find(check_role => check_role.id ===config.ROLES.LINKED);
-                if(!member.roles.cache.has(role_linked.id)) {
-                    member.roles.add(role_linked);
-                    logging.info(client, `Added ${role_linked.name} to ${member.user.tag} as they linked their account!`);
+                    messageEmbed.setDescription(`Updated ${member.user.tag} (${membersUpdated}/${memberCount})\nNew Nick: ${member.nickname}\nNew Roles: ${member.roles.cache.map().join(`, `)}`)
+                    channelDebug.send(messageEmbed);
                 }
-                role_needed = guild.roles.cache.find(check_role => check_role.name === model.player_rank);
-                if(role_needed) {
-                    if(!member.roles.cache.has(role_needed.id)) {
-                        member.roles.add(role_needed);
-                        logging.info(client, `Added ${role_needed.name} to ${member.user.tag} as they linked their account!`);
-                    }
-                }
-            } else if(!model) {
-                let role = guild.roles.cache.get(config.ROLES.LINKED);
-                if(member.roles.cache.has(role.id)) {
-                    member.roles.remove(role);
-                    logging.info(client, `Removed ${role.name} from ${member.user.tag} as they unlinked their account!`);
-                }
-    
-                linking_roles.forEach(role_id => {
-                    let role = guild.roles.cache.get(role_id);
-                    if(member.roles.cache.has(role)) {
-                        logging.info(client, `Removed ${role.name} from ${member.user.tag} as they unlinked their account!`);
-                        member.roles.remove(role);
-                    }
-                }); 
             }
-        });
-    }, 1000 * 300);
+        } else if(!model) {
+            let role = guild.roles.cache.get(config.ROLES.LINKED);
+            if(member.roles.cache.has(role.id)) {
+                member.roles.remove(role);
+                logging.info(client, `Removed ${role.name} from ${member.user.tag} as they unlinked their account!`);
+            }
+
+            linking_roles.forEach(role_id => {
+                let role = guild.roles.cache.get(role_id);
+                if(member.roles.cache.has(role)) {
+                    logging.info(client, `Removed ${role.name} from ${member.user.tag} as they unlinked their account!`);
+                    member.roles.remove(role);
+                }
+            }); 
+        }
+        membersUpdated++;
+    };
+    let difference = getTimeDiffAndPrettyText(startingNow);
+    messageEmbed.setDescription(`Finished looping through ${memberCount} users in ${difference.minutes} minutes and ${difference.seconds} seconds!`);
+    channelDebug.send(messageEmbed);
+    initLinking(client,guild);
 };
 
 async function initStatus(client, guild) {
     let status_list = [
-        "PLAYING|play.mineversa.net",
-        "PLAYING|play.genversa.net",
+        "PLAYING|mineversa.minehut.gg",
         "PLAYING|subtropic.minehut.gg",
         "WATCHING|over <users> users",
         "WATCHING|over tickets (-help)",
