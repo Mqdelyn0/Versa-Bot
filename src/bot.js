@@ -179,7 +179,7 @@ async function initLinking(client, guild) {
         if(model) {
             if(member.nickname) {
                 if(!member.nickname.includes(`[${model.player_rank}]`) || !member.nickname.includes(`${model.player_name}`)) {
-                    await delay(500);
+                    let a = await delay(5000);
                     member.setNickname(`[${model.player_rank}] ${model.player_name}`);
                     if(model.is_verified === false) return;
                     linking_roles.forEach(role_id => {
@@ -225,7 +225,7 @@ async function initLinking(client, guild) {
         }
         membersUpdated++;
     };
-    await(5000);
+    let a = await delay(5000);
     let difference = getTimeDiffAndPrettyText(startingNow);
     messageEmbed.setDescription(`Finished looping through ${memberCount} users in ${difference.minutes} minutes and ${difference.seconds} seconds!`);
     channelDebug.send(messageEmbed);
