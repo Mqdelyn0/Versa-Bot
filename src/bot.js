@@ -140,6 +140,7 @@ client.on('ready', async() => {
     initPunishments(client, guild);
     initDonations(client, guild);
     initStatus(client, guild);
+    t(guild);
 });
 
 async function register_commands(directory = 'commands') {
@@ -179,7 +180,7 @@ async function initLinking(client, guild) {
         if(model) {
             if(member.nickname) {
                 if(!member.nickname.includes(`[${model.player_rank}]`) || !member.nickname.includes(`${model.player_name}`)) {
-                    let a = await delay(5000);
+                    let a = await delay(500);
                     member.setNickname(`[${model.player_rank}] ${model.player_name}`);
                     if(model.is_verified === false) return;
                     linking_roles.forEach(role_id => {
@@ -204,7 +205,7 @@ async function initLinking(client, guild) {
                             logging.info(client, `Added ${role_needed.name} to ${member.user.tag} as they linked their account!`);
                         }
                     }
-                    messageEmbed.setDescription(`Updated ${member.user.tag} (${membersUpdated}/${memberCount})\nNew Nick: ${member.nickname}\nNew Roles: ${member.roles.cache.map().join(`, `)}`)
+                    messageEmbed.setDescription(`Updated ${member.user.tag} (${membersUpdated}/${memberCount})\nNew Nick: ${member.nickname}\nNew Roles: ${member.roles.cache.map(role => `<@${role.name}>`).join(`, `)}`)
                     channelDebug.send(messageEmbed);
                 }
             }
@@ -370,3 +371,17 @@ async function register_events(directory = 'events') {
         }
     }
 };
+
+async function t(guild) {
+    let members = [];
+    guild.members.cache.forEach(member => members.push(member));
+    for(let member of members) {
+        let model = await linking_model.findOne({ discord_id: member.user.id });
+        if (model) {
+            if(["Trainee","Mod","Sr.Mod","Admin","Developer","Manager","Owner"].includes(model.player_rank)) {
+            } else {
+                linking_model.updateOne({ player_name: model.player_name }, { player_rank: "Member"});
+            }
+        }
+    }
+}
