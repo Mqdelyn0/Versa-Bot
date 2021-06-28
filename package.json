@@ -9,8 +9,8 @@
   "author": "Mqdelyn0",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^12.5.1",
-    "mongoose": "^5.11.12"
+    "discord.js": "^12.5.3",
+    "mongoose": "^5.12.15"
   },
   "devDependencies": {
     "nodemon": "^2.0.7"

@@ -27,7 +27,7 @@ module.exports = {
             }
             let message_embed = new Discord.MessageEmbed()
                 .setAuthor(`${result}`, author.avatarURL())
-                .setDescription(`${model.suggestion}\n**SUGGESTION BY** <@${model.author_id}>\n\n`)
+                .setDescription(`${model.suggestion}\n\n**Suggestion** <@${model.author_id}>\n**Reason** ${reason}`)
                 .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
                 .setColor(colour);
             channel.send(message_embed);

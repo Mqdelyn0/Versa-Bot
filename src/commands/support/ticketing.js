@@ -14,12 +14,12 @@ module.exports = {
         if(arguments[0] === `help`) {
             message_embed = new Discord.MessageEmbed()
                 .setAuthor(`Ticketing Commands`, message.author.avatarURL())
-                .setDescription(`Here's a list of all the commands you can do!\n\n-ticket create (reason)\n-ticket delete\n-ticket autodeletion (true/false)`)
+                .setDescription(`Here's a list of all the commands you can do!\n\n-ticket create (reason)\n-ticket delete\n-ticket evadedeletion (true/false)`)
                 .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
                 .setColor(config.BOT_SETTINGS.EMBED_COLORS.MAIN);
             return message.channel.send(message_embed)
         } else if(arguments[0] !== `help` && arguments.length >= 1) {
-            if(arguments[0] === `autodeletion`) {
+            if(arguments[0] === `evadedeletion`) {
                 if(![`true`, `false`].includes(arguments[1])) {
                     message_embed = new Discord.MessageEmbed()
                         .setAuthor(`ERROR`, message.author.avatarURL())

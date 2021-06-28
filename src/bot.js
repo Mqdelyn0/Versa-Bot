@@ -135,12 +135,11 @@ client.on('ready', async() => {
     register_events();
     mongoose.init(client);
     let guild = await client.guilds.cache.get(config.BOT_SETTINGS.GUILD_ID);
-    initLinking(client, guild);
+    initLinking(client, guild, false);
     initTicketing(client, guild);
     initPunishments(client, guild);
-    initDonations(client, guild);
+    // initDonations(client, guild);
     initStatus(client, guild);
-    t(guild);
 });
 
 async function register_commands(directory = 'commands') {
@@ -161,19 +160,22 @@ async function register_commands(directory = 'commands') {
     }
 };
 
-async function initLinking(client, guild) {
-    let channelDebug = guild.channels.cache.get(`852627152843309056`);
+async function initLinking(client, guild, recalled) {
+    let channelDebug = guild.channels.cache.get(config.CHANNELS.VERSA_BOT_LOGGING);
     let memberCount = guild.memberCount;
     let membersUpdated = 0;
     let members = [];
     let startingNow = new Date();
     guild.members.cache.forEach(member => members.push(member));
-    let messageEmbed = new Discord.MessageEmbed()
-        .setTitle(`Linking Update`)
-        .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
-        .setColor(config.BOT_SETTINGS.EMBED_COLORS.MAIN)
-        .setDescription(`Finished a loop, Starting a New Loop with ${memberCount} users to loop`)
-    channelDebug.send(messageEmbed);
+    let messageEmbed = new Discord.MessageEmbed().setTitle(`Linking Update`);
+    if(recalled === true) {
+        messageEmbed = new Discord.MessageEmbed()
+            .setTitle(`Linking Update`)
+            .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
+            .setColor(config.BOT_SETTINGS.EMBED_COLORS.MAIN)
+            .setDescription(`Finished a loop, Starting a New Loop with ${memberCount} users to loop`);
+        channelDebug.send(messageEmbed);
+    }
     for(let member of members) {
         let linking_roles = config.ROLES.LINKING;
         let model = await linking_model.findOne({ discord_id: member.id });
@@ -205,17 +207,24 @@ async function initLinking(client, guild) {
                             logging.info(client, `Added ${role_needed.name} to ${member.user.tag} as they linked their account!`);
                         }
                     }
-                    messageEmbed.setDescription(`Updated ${member.user.tag} (${membersUpdated}/${memberCount})\nNew Nick: ${member.nickname}\nNew Roles: ${member.roles.cache.map(role => `<@${role.name}>`).join(`, `)}`)
+                    let b = await delay(500);
+                    messageEmbed.setDescription(`Updated ${member.user.tag} (${membersUpdated}/${memberCount})\nNew Nick: ${member.displayName}\nNew Roles: ${member.roles.cache.map(role => `<@${role.name}>`).join(`, `)}`)
                     channelDebug.send(messageEmbed);
                 }
             }
         } else if(!model) {
+            if(member.nickname) {
+                if(member.nickname !== member.username) {
+                    member.setNickname(member.username);
+                }
+            }
+            messageEmbed.setDescription(`Updated ${member.user.tag} (${membersUpdated}/${memberCount})\nNew Nick: ${member.displayName}\nNew Roles: ${member.roles.cache.map(role => `<@${role.name}>`).join(`, `)}`)
+            channelDebug.send(messageEmbed);
             let role = guild.roles.cache.get(config.ROLES.LINKED);
             if(member.roles.cache.has(role.id)) {
                 member.roles.remove(role);
                 logging.info(client, `Removed ${role.name} from ${member.user.tag} as they unlinked their account!`);
             }
-
             linking_roles.forEach(role_id => {
                 let role = guild.roles.cache.get(role_id);
                 if(member.roles.cache.has(role)) {
@@ -228,15 +237,18 @@ async function initLinking(client, guild) {
     };
     let a = await delay(5000);
     let difference = getTimeDiffAndPrettyText(startingNow);
-    messageEmbed.setDescription(`Finished looping through ${memberCount} users in ${difference.minutes} minutes and ${difference.seconds} seconds!`);
+    recalled = true;
+    if(membersUpdated > 0) {
+        recalled = false;
+        messageEmbed.setDescription(`Finished looping through ${memberCount} users in ${difference.minutes} minutes and ${difference.seconds} seconds!`);
+    }
     channelDebug.send(messageEmbed);
-    initLinking(client,guild);
+    initLinking(client,guild,recalled);
 };
 
 async function initStatus(client, guild) {
     let status_list = [
-        "PLAYING|mineversa.minehut.gg",
-        "PLAYING|subtropic.minehut.gg",
+        "PLAYING|play.mineversa.net",
         "WATCHING|over <users> users",
         "WATCHING|over tickets (-help)",
     ];
@@ -334,27 +346,27 @@ async function initPunishments(client, guild) {
     }, 1000 * 60);
 };
 
-async function initDonations(client, guild) {
-    setInterval(async() => {
-        let donations = await donations_model.find({});
-        let donators = [];
-        for(let donation of donations) {
-            let channel = client.channels.cache.get(config.CHANNELS.DONATIONS_LOGGING);
-            const message_embed = new Discord.MessageEmbed()
-                .setTitle(`Server Donation`)
-                .setThumbnail(`https://minotar.net/helm/${donation.player_name}`)
-                .setDescription(`Thank you ${donation.player_name} for buying ${donation.bought_item}!\n\nDonation: ${donation.moneyz_got}\nServer: ${donation.what_server}`)
-                .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
-                .setColor(config.BOT_SETTINGS.EMBED_COLORS.MAIN);
-            channel.send(message_embed);
-            donators.push(donation.player_name);
-            donation.delete();
-        }
-        if(donators.length >= 1) {
-            logging.info(client, `Fetched ${donators.length} donations! Thanks to ${donators.join(', ')}! uwu`);
-        }
-    }, 1000 * 60);
-};
+// async function initDonations(client, guild) {
+//     setInterval(async() => {
+//         let donations = await donations_model.find({});
+//         let donators = [];
+//         for(let donation of donations) {
+//             let channel = client.channels.cache.get(config.CHANNELS.DONATIONS_LOGGING);
+//             const message_embed = new Discord.MessageEmbed()
+//                 .setTitle(`Server Donation`)
+//                 .setThumbnail(`https://minotar.net/helm/${donation.player_name}`)
+//                 .setDescription(`Thank you ${donation.player_name} for buying ${donation.bought_item}!\n\nDonation: ${donation.moneyz_got}\nServer: ${donation.what_server}`)
+//                 .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
+//                 .setColor(config.BOT_SETTINGS.EMBED_COLORS.MAIN);
+//             channel.send(message_embed);
+//             donators.push(donation.player_name);
+//             donation.delete();
+//         }
+//         if(donators.length >= 1) {
+//             logging.info(client, `Fetched ${donators.length} donations! Thanks to ${donators.join(', ')}! uwu`);
+//         }
+//     }, 1000 * 60);
+// };
 
 async function register_events(directory = 'events') {
     let files = await fs.readdirSync(path.join(__dirname, directory));
@@ -372,16 +384,16 @@ async function register_events(directory = 'events') {
     }
 };
 
-async function t(guild) {
-    let members = [];
-    guild.members.cache.forEach(member => members.push(member));
-    for(let member of members) {
-        let model = await linking_model.findOne({ discord_id: member.user.id });
-        if (model) {
-            if(["Trainee","Mod","Sr.Mod","Admin","Developer","Manager","Owner"].includes(model.player_rank)) {
-            } else {
-                linking_model.updateOne({ player_name: model.player_name }, { player_rank: "Member"});
-            }
-        }
-    }
-}
+// async function t(guild) {
+//     let members = [];
+//     guild.members.cache.forEach(member => members.push(member));
+//     for(let member of members) {
+//         let model = await linking_model.findOne({ discord_id: member.user.id });
+//         if (model) {
+//             if(["Trainee","Mod","Sr.Mod","Admin","Developer","Manager","Owner"].includes(model.player_rank)) {
+//             } else {
+//                 linking_model.updateOne({ player_name: model.player_name }, { player_rank: "Member"});
+//             }
+//         }
+//     }
+// }

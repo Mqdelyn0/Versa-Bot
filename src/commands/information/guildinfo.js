@@ -20,8 +20,9 @@ module.exports = {
                 { name: 'All Members', value: `${guild.members.cache.size}`, inline: true },
                 { name: 'All Humans', value: `${guild.members.cache.filter(member => !member.user.bot).size}`, inline: true },
                 { name: 'All Bots', value: `${guild.members.cache.filter(member => member.user.bot).size}`, inline: true },
-                { name: `Channels [${guild.channels.cache.filter(channel => channel.type === 'text').size}]`, value: `${guild.channels.cache.filter(channel => channel.type === 'text').map(channel => `${channel}`).join(', ')}`, inline: false },
-                { name: `Roles [${guild.roles.cache.size}]`, value: `${guild.roles.cache.map(role => `${role}`).join(', ')}`, inline: false },
+                { name: `Text Channels`, value: `${guild.channels.cache.filter(channel => channel.type === 'text').size}`, inline: true },
+                { name: `Voice Channels`, value: `${guild.channels.cache.filter(channel => channel.type === 'voice').size}`, inline: true },
+                { name: `Roles`, value: `${guild.roles.cache.size}`, inline: true },
             )
             .setFooter(config.BOT_SETTINGS.EMBED_AUTHOR)
             .setColor(config.BOT_SETTINGS.EMBED_COLORS.MAIN);
